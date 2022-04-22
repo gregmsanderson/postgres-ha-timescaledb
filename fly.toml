@@ -1,4 +1,4 @@
-app = "postgres-ha-example"
+app = "postgres-ha-timescaledb"
 
 kill_signal = "SIGTERM"
 kill_timeout = 300
@@ -6,47 +6,47 @@ services = []
 
 [checks]
 
-  [checks.pg]
-    grace_period = "30s"
-    interval = "15s"
-    method = "get"
-    path = "/flycheck/pg"
-    port = 5500
-    timeout = "10s"
-    type = "http"
+[checks.pg]
+grace_period = "30s"
+interval = "15s"
+method = "get"
+path = "/flycheck/pg"
+port = 5500
+timeout = "10s"
+type = "http"
 
-  [checks.role]
-    grace_period = "30s"
-    interval = "15s"
-    method = "get"
-    path = "/flycheck/role"
-    port = 5500
-    timeout = "10s"
-    type = "http"
+[checks.role]
+grace_period = "30s"
+interval = "15s"
+method = "get"
+path = "/flycheck/role"
+port = 5500
+timeout = "10s"
+type = "http"
 
-  [checks.vm]
-    grace_period = "1s"
-    interval = "1m"
-    method = "get"
-    path = "/flycheck/vm"
-    port = 5500
-    timeout = "10s"
-    type = "http"
+[checks.vm]
+grace_period = "1s"
+interval = "1m"
+method = "get"
+path = "/flycheck/vm"
+port = 5500
+timeout = "10s"
+type = "http"
 
 [env]
-  BACKEND_STORE = "consul"
-  PRIMARY_REGION = "ord"
+BACKEND_STORE = "consul"
+PRIMARY_REGION = "lhr"
 
 [experimental]
-  allowed_public_ports = []
-  auto_rollback = false
-  enable_consul = true
-  private_network = true
+allowed_public_ports = []
+auto_rollback = false
+enable_consul = true
+private_network = true
 
 [metrics]
-  path = "/metrics"
-  port = 9187
+path = "/metrics"
+port = 9187
 
 [[mounts]]
-  destination = "/data"
-  source = "pg_data"
+destination = "/data"
+source = "pg_data"

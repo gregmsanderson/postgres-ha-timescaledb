@@ -23,7 +23,7 @@ FROM flyio/stolon:2e719de as stolon
 FROM wrouesnel/postgres_exporter:latest AS postgres_exporter
 
 FROM postgres:${PG_VERSION}
-ARG VERSION 
+ARG VERSION
 ARG POSTGIS_MAJOR=3
 
 LABEL fly.app_role=postgres_cluster
@@ -33,8 +33,15 @@ LABEL fly.pg-version=${PG_VERSION}
 RUN apt-get update && apt-get install --no-install-recommends -y \
     ca-certificates curl bash dnsutils vim-tiny procps jq haproxy \
     postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR \
-    postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR-scripts \    
+    postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR-scripts \
     && apt autoremove -y
+
+# timescale https://docs.timescale.com/install/latest/self-hosted/installation-debian/#install-self-hosted-timescaledb-on-debian-based-systems
+RUN apt-get install --no-install-recommends -y gnupg postgresql-common apt-transport-https lsb-release wget curl
+RUN echo "deb https://packagecloud.io/timescale/timescaledb/debian/ $(lsb_release -c -s) main" > /etc/apt/sources.list.d/timescaledb.list && \
+    wget --quiet -O - https://packagecloud.io/timescale/timescaledb/gpgkey | apt-key add - && \
+    apt-get update && \
+    apt-get install -y timescaledb-2-postgresql-$PG_MAJOR timescaledb-tools
 
 COPY --from=stolon /go/src/app/bin/* /usr/local/bin/
 COPY --from=postgres_exporter /postgres_exporter /usr/local/bin/
