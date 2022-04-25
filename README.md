@@ -13,8 +13,8 @@ Since Fly's Postgres clusters are just regular Fly applications, in theory you _
 If you haven't already done so, [install the Fly CLI](https://fly.io/docs/getting-started/installing-flyctl/) and then [log in to Fly](https://fly.io/docs/getting-started/log-in-to-fly/).
 
 1. Clone this repo
-2. Run `fly pg create` to create a new database app. Give it a name, choose its region and whether to use HA. It will take a minute to configure and will then show credentials to connect to it.
-3. (optional) If you would like to create a multi-region database app, [add read-replicas](https://fly.io/docs/getting-started/multi-region-databases/#create-a-postgresql-cluster).
+2. Run `fly pg create` to create a new database app. Give it a name, choose its region, and whether to use HA. It may take a few minutes to deploy.
+3. (optional) If you would like to create a multi-region database app, [add read-replicas](https://fly.io/docs/getting-started/multi-region-databases/#create-a-postgresql-cluster) to it.
 4. Edit the `fly.toml` in two places to match the values you chose for the database app's name and primary [region](https://fly.io/docs/reference/regions/#fly-io-regions):
 
     ```toml
@@ -22,21 +22,21 @@ If you haven't already done so, [install the Fly CLI](https://fly.io/docs/gettin
 
     PRIMARY_REGION = "lhr"
     ```
-4. Run `fly deploy` to apply the modifications to install the TimescaleDB extension. It may take a few minutes.
-5. Enable the TimescaleDB extension by using a stolon update (stolon controls the cluster):
+4. Run `fly deploy` to apply the modifications to **install** the TimescaleDB extension. It may take a few minutes as new VMs will need to be created.
+5. When complete, **enable** the TimescaleDB extension by using a stolon update (stolon controls the cluster):
     ```sh
     fly ssh console
     export $(cat /data/.env | xargs)
     stolonctl update --patch '{"pgParameters": { "shared_preload_libraries": "timescaledb"}}'
+    exit
     ```
-    You might like to confirm that worked by running `stolonctl clusterdata read` and checking you see `"shared_preload_libraries":"timescaledb"` within that large block of JSON.
-6. Run `fly restart your-database-name-here` to apply that stolon update to all VMs in the cluster. It may take a minute to complete.
-7. (optional) Run  `fly checks list` to confirm all is well: you should see all the checks pass.
-8. (optional) Confirm the TimescaleDB extension has been successfully installed by connecting to the database's VM (run `fly ssh console`) and running these two commands:
+6. Run `fly restart your-database-name-here` to apply that stolon update to all VMs in the cluster.
+7. Every minute or so, try `fly checks list` to confirm all is well. Once the restart completes you should see all the checks have a status of `passing` (there are usually three checks _per_ VM).
+8. (optional) Confirm the TimescaleDB extension has been successfully installed by connecting to the database app (`fly ssh console`) and running these two commands:
     ```
     cat /data/postgres/postgresql.conf
     ```
-    That should contain this line:
+    You should see that file now contains this line:
     ```
     shared_preload_libraries = 'timescaledb'`
     ```
@@ -44,9 +44,8 @@ If you haven't already done so, [install the Fly CLI](https://fly.io/docs/gettin
     ```
     dpkg -l | grep -E 'timescale'
     ```
-    That should list the TimescaleDB extension:
+    You should see the TimescaleDB extension listed:
     ```
-    ...
     timescaledb-2-loader-postgresql-14 2.6.1~debian11                 amd64        The loader for TimescaleDB to load individual versions.
     timescaledb-2-postgresql-14        2.6.1~debian11                 amd64        An open-source time-series database based on PostgreSQL, as an extension.
     timescaledb-tools                  0.12.0~debian11                amd64        A suite of tools that can be used with TimescaleDB.
@@ -56,29 +55,54 @@ If you haven't already done so, [install the Fly CLI](https://fly.io/docs/gettin
 
 Usually you would attach a Fly app to the PostgreSQL app (by using the `fly pg attach --postgres-app your-database-name-here` command). That creates a new database (with the same name as the app) and provides the app with a secret `DATABASE_URL` which it can use to securely connect to it.
 
-Or you can manually create a database (by using `CREATE DATABASE database-name-here;`).
+Or you can manually create a database (by using `CREATE DATABASE its_name;`) as we demonstrate below.
 
-Either way, once you have a database you will need to [add the TimescaleDB extension](https://docs.timescale.com/install/latest/self-hosted/installation-debian/#set-up-the-timescaledb-extension) to it. For example (using the credentials provided by Fly):
-
-```sh
-$ psql postgres://postgres:your-pg-password-here@top1.nearest.of.your-pg-app-name-here.internal:5432
-\c your-database-name-here;
-CREATE EXTENSION IF NOT EXISTS timescaledb;
-```
-
-You can confirm that has worked by using the `\dx` command with psql. You should see something like:
+Armed with a database, the final step is to [add the TimescaleDB extension](https://docs.timescale.com/install/latest/self-hosted/installation-debian/#set-up-the-timescaledb-extension) _to_ that database. Since we have Wireguard and PostgreSQL installed locally, we can do that right now:
 
 ```
+$ psql postgres://postgres:your-password-here@your-pg-app.internal:5432
+psql (14.2)
+Type "help" for help.
+
+postgres=# create database delete_me;
+CREATE DATABASE
+
+postgres=# \c delete_me;
+You are now connected to database "delete_me" as user "postgres".
+
+delete_me=# CREATE EXTENSION IF NOT EXISTS timescaledb;
+WELCOME TO
+ _____ _                               _     ____________
+|_   _(_)                             | |    |  _  \ ___ \
+  | |  _ _ __ ___   ___  ___  ___ __ _| | ___| | | | |_/ /
+  | | | |  _ ` _ \ / _ \/ __|/ __/ _` | |/ _ \ | | | ___ \
+  | | | | | | | | |  __/\__ \ (_| (_| | |  __/ |/ /| |_/ /
+  |_| |_|_| |_| |_|\___||___/\___\__,_|_|\___|___/ \____/
+               Running version 2.6.1
+For more information on TimescaleDB, please visit the following links:
+
+ 1. Getting started: https://docs.timescale.com/timescaledb/latest/getting-started
+ 2. API reference documentation: https://docs.timescale.com/api/latest
+ 3. How TimescaleDB is designed: https://docs.timescale.com/timescaledb/latest/overview/core-concepts
+
+Note: TimescaleDB collects anonymous reports to better understand and assist our users.
+For more information and how to disable, please see our docs https://docs.timescale.com/timescaledb/latest/how-to-guides/configuration/telemetry.
+
+CREATE EXTENSION
+delete_me=# \dx;
                                       List of installed extensions
     Name     | Version |   Schema   |                            Description
 -------------+---------+------------+-------------------------------------------------------------------
  plpgsql     | 1.0     | pg_catalog | PL/pgSQL procedural language
  timescaledb | 2.6.1   | public     | Enables scalable inserts and complex queries for time-series data
+(2 rows)
+
+delete_me=# \q
 ```
 
 ## Using TimescaleDB
 
-You can use standard SQL but can now also create and query hypertables (source: [The Timescale repo](https://github.com/timescale/timescaledb#creating-a-hypertable))
+You use standard SQL but can now _also_ create and query hypertables (this example is from [the TimescaleDB repo](https://github.com/timescale/timescaledb#creating-a-hypertable))
 
 ```sql
 -- Do not forget to create timescaledb extension
@@ -117,7 +141,7 @@ There are lots more tutorials within the [TimescaleDB docs](https://docs.timesca
 
 ## Modified files
 
-If you would like to make your own, we changed these files in the [repo](https://github.com/fly-apps/postgres-ha):
+If you would like to make your own fork, we changed these files in the [repo](https://github.com/fly-apps/postgres-ha):
 
 #### fly.toml
 
@@ -184,7 +208,7 @@ psql postgres://postgres:<operator_password>@localhost:5432
 2. With [WireGuard](https://fly.io/docs/reference/private-networking/#install-your-wireguard-app) installed and configured, you can simply use psql to connect to your Postgres instance using its `.internal` hostname (as if you were a Fly app within the private network):
 
 ```
-psql postgres://postgres:your-pg-password-here@top1.nearest.of.your-pg-app-name-here.internal:5432
+psql postgres://postgres:your-pg-password-here@your-pg-app-name-here.internal:5432
 ```
 
 ## Having trouble?
