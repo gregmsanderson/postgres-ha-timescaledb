@@ -13,15 +13,15 @@ Since Fly's Postgres clusters are just regular Fly applications, in theory you _
 If you haven't already done so, [install the Fly CLI](https://fly.io/docs/getting-started/installing-flyctl/) and then [log in to Fly](https://fly.io/docs/getting-started/log-in-to-fly/).
 
 1. Clone this repo
-2. Edit the `fly.toml` in two places: the `app` name, and the value of `PRIMARY_REGION` as the [region](https://fly.io/docs/reference/regions/#fly-io-regions) you plan to use for your database:
+2. Run `fly pg create` to create a new database app. Give it a name, choose its region and whether to use HA. It will take a minute to configure and will then show credentials to connect to it.
+3. (optional) If you would like to create a multi-region database app, [add read-replicas](https://fly.io/docs/getting-started/multi-region-databases/#create-a-postgresql-cluster).
+4. Edit the `fly.toml` in two places to match the values you chose for the database app's name and primary [region](https://fly.io/docs/reference/regions/#fly-io-regions):
 
     ```toml
     app = "your-pg-name"
 
     PRIMARY_REGION = "lhr"
     ```
-3. Run `fly pg create` to create a new database app. You can choose its region and whether to use HA. It will take a minute to configure and will then show you your credentials.
-4. (optional) If you would like to create a multi-region database app, [add read-replicas](https://fly.io/docs/getting-started/multi-region-databases/#create-a-postgresql-cluster).
 4. Run `fly deploy` to apply the modifications to install the TimescaleDB extension. It may take a few minutes.
 5. Enable the TimescaleDB extension by using a stolon update (stolon controls the cluster):
     ```sh
@@ -161,11 +161,11 @@ Fly apps within the same organization can connect to your Postgres using the fol
 postgres://postgres:<operator_password>@<postgres-app-name>.internal:5432/<database-name>
 ```
 
-### Connecting to Postgres from your local machine (without Wireguard)
+### Connecting from your local machine (without Wireguard)
 
 1. Postgres needs to be installed on your local machine.
 
-2. If you don't have [WireGuard](https://fly.io/docs/reference/private-networking/#install-your-wireguard-app) installed and configured, forward the server port to your local system with [`flyctl proxy`](https://fly.io/docs/flyctl/proxy/):
+2. Forward the server port to your local system with [`flyctl proxy`](https://fly.io/docs/flyctl/proxy/):
 
 ```
 flyctl proxy 5432 -a <postgres-app-name>
@@ -177,11 +177,11 @@ flyctl proxy 5432 -a <postgres-app-name>
 psql postgres://postgres:<operator_password>@localhost:5432
 ```
 
-### Connecting to Postgres from your local machine (with Wireguard)
+### Connecting from your local machine (with Wireguard)
 
 1. Postgres needs to be installed on your local machine.
 
-2. If you do have [WireGuard](https://fly.io/docs/reference/private-networking/#install-your-wireguard-app) installed and configured, you can simply use psql to connect to your Postgres instance using the `.internal` hostname (as if you were an app within the private network):
+2. With [WireGuard](https://fly.io/docs/reference/private-networking/#install-your-wireguard-app) installed and configured, you can simply use psql to connect to your Postgres instance using its `.internal` hostname (as if you were a Fly app within the private network):
 
 ```
 psql postgres://postgres:your-pg-password-here@top1.nearest.of.your-pg-app-name-here.internal:5432
