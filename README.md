@@ -12,7 +12,7 @@ Since Fly's Postgres clusters are just regular Fly applications, in theory you _
 
 If you haven't already done so, [install the Fly CLI](https://fly.io/docs/getting-started/installing-flyctl/) and then [log in to Fly](https://fly.io/docs/getting-started/log-in-to-fly/).
 
-1. Clone this repo
+1. Clone this repo.
 2. Run `fly pg create` to create a new database app. Give it a name, choose its region, and whether to use HA. It may take a few minutes to deploy.
 3. (optional) If you would like to create a multi-region database app, [add read-replicas](https://fly.io/docs/getting-started/multi-region-databases/#create-a-postgresql-cluster) to it.
 4. Edit the `fly.toml` in two places to match the values you chose for the database app's name and primary [region](https://fly.io/docs/reference/regions/#fly-io-regions):
@@ -24,21 +24,21 @@ If you haven't already done so, [install the Fly CLI](https://fly.io/docs/gettin
     ```
 4. Run `fly deploy` to apply the modifications to **install** the TimescaleDB extension. It may take a few minutes as new VMs will need to be created.
 5. When complete, **enable** the TimescaleDB extension by using a stolon update (stolon controls the cluster):
-    ```sh
+    ```
     fly ssh console
     export $(cat /data/.env | xargs)
     stolonctl update --patch '{"pgParameters": { "shared_preload_libraries": "timescaledb"}}'
     exit
     ```
 6. Run `fly restart your-database-name-here` to apply that stolon update to all VMs in the cluster.
-7. Every minute or so, try `fly checks list` to confirm all is well. Once the restart completes you should see all the checks have a status of `passing` (there are usually three checks _per_ VM).
-8. (optional) Confirm the TimescaleDB extension has been successfully installed by connecting to the database app (`fly ssh console`) and running these two commands:
+7. Wait a minute and then run `fly checks list`. Once the restart has fully completed you should see _all_ healthchecks have a status of `passing` (there are currently three checks per VM so it can take a few minutes for them all to pass).
+8. (optional) Once all healthchecks show as passing, confirm the TimescaleDB extension has indeed been successfully installed by connecting to the database app (using `fly ssh console`) and running these two commands:
     ```
     cat /data/postgres/postgresql.conf
     ```
     You should see that file now contains this line:
     ```
-    shared_preload_libraries = 'timescaledb'`
+    shared_preload_libraries = 'timescaledb'
     ```
     ... and ...
     ```
@@ -57,7 +57,7 @@ Usually you would attach a Fly app to the PostgreSQL app (by using the `fly pg a
 
 Or you can manually create a database (by using `CREATE DATABASE its_name;`) as we demonstrate below.
 
-Armed with a database, the final step is to [add the TimescaleDB extension](https://docs.timescale.com/install/latest/self-hosted/installation-debian/#set-up-the-timescaledb-extension) _to_ that database. Since we have Wireguard and PostgreSQL installed locally, we can do that right now:
+The final step is to [add the TimescaleDB extension](https://docs.timescale.com/install/latest/self-hosted/installation-debian/#set-up-the-timescaledb-extension) _to_ a database. Since we have Wireguard and PostgreSQL installed locally, we can do that right now:
 
 ```
 $ psql postgres://postgres:your-password-here@your-pg-app.internal:5432
