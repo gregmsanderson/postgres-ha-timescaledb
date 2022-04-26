@@ -53,11 +53,13 @@ If you haven't already done so, [install the Fly CLI](https://fly.io/docs/gettin
 
 ## Add TimescaleDB to a database
 
-Usually you would attach a Fly app to the PostgreSQL app (by using the `fly pg attach --postgres-app your-database-name-here` command). That creates a new database (with the same name as the app) and provides the app with a secret `DATABASE_URL` which it can use to securely connect to it.
+Now that it's installed and enabled, the _final_ step is to [add the TimescaleDB extension](https://docs.timescale.com/install/latest/self-hosted/installation-debian/#set-up-the-timescaledb-extension) to a database.
 
-Or you can manually create a database (by using `CREATE DATABASE its_name;`) as we demonstrate below.
+Usually you would attach a Fly app to the PostgreSQL app (by using the `fly pg attach --postgres-app your-database-name-here` command). That creates a database (with the same name as the app).
 
-The final step is to [add the TimescaleDB extension](https://docs.timescale.com/install/latest/self-hosted/installation-debian/#set-up-the-timescaledb-extension) _to_ a database. Since we have Wireguard and PostgreSQL installed locally, we can do that right now:
+If you haven't, create a database by running `CREATE DATABASE its_name;`.
+
+Since we have Wireguard and PostgreSQL installed locally we'll use that second approach and so can then add the extension to it:
 
 ```
 $ psql postgres://postgres:your-password-here@your-pg-app.internal:5432
